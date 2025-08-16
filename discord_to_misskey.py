@@ -3,16 +3,22 @@ import requests
 import os
 
 # 環境変数から設定を読み込み
-DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-MISSKEY_TOKEN     = os.getenv('MISSKEY_TOKEN')
-MISSKEY_HOST      = os.getenv('MISSKEY_HOST')
+def get_env_var(var_name, required=True):
+    value = os.getenv(var_name)
+    if required and not value:
+        print(f"⚠️  環境変数 {var_name} が設定されていません")
+    return value
+
+DISCORD_BOT_TOKEN = get_env_var('DISCORD_BOT_TOKEN')
+MISSKEY_TOKEN     = get_env_var('MISSKEY_TOKEN')
+MISSKEY_HOST      = get_env_var('MISSKEY_HOST')
 
 # 複数のチャンネルIDをリストに
-TARGET_CHANNEL_IDS_STR = os.getenv('TARGET_CHANNEL_IDS')
+TARGET_CHANNEL_IDS_STR = get_env_var('TARGET_CHANNEL_IDS')
 TARGET_CHANNEL_IDS = [int(x.strip()) for x in TARGET_CHANNEL_IDS_STR.split(',')] if TARGET_CHANNEL_IDS_STR else []
 
 # ★ 自分のDiscordユーザーID（数値）だけ通す
-MY_USER_ID = int(os.getenv('MY_USER_ID')) if os.getenv('MY_USER_ID') else None
+MY_USER_ID = int(get_env_var('MY_USER_ID')) if get_env_var('MY_USER_ID') else None
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -20,6 +26,12 @@ client = discord.Client(intents=intents)
 
 # 環境変数の検証
 def validate_environment():
+    print("🔍 環境変数の検証を開始...")
+    
+    # すべての環境変数を確認
+    all_env_vars = os.environ
+    print(f"📋 利用可能な環境変数: {list(all_env_vars.keys())}")
+    
     required_vars = {
         'DISCORD_BOT_TOKEN': DISCORD_BOT_TOKEN,
         'MISSKEY_TOKEN': MISSKEY_TOKEN,
@@ -27,6 +39,13 @@ def validate_environment():
         'TARGET_CHANNEL_IDS': TARGET_CHANNEL_IDS_STR,
         'MY_USER_ID': os.getenv('MY_USER_ID')
     }
+    
+    print("🔍 必要な環境変数の値:")
+    for var, value in required_vars.items():
+        if value:
+            print(f"  ✅ {var}: {'*' * len(str(value)) if 'TOKEN' in var else value}")
+        else:
+            print(f"  ❌ {var}: 未設定")
     
     missing_vars = [var for var, value in required_vars.items() if not value]
     
