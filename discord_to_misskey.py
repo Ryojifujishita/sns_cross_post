@@ -90,9 +90,9 @@ def customize_youtube_display(text: str) -> str:
             video_id = match.group(1)
             # YouTubeリンクを強調表示
             if 'shorts' in pattern:
-                return f"🎬 **YouTube Short**\n\n{text}\n\n📺 *大きなサムネイルで表示*"
+                return f"🎬 **YouTube Short**\n\n{text}"
             else:
-                return f"📺 **YouTube動画**\n\n{text}\n\n🎬 *サムネイルサイズ: 大*"
+                return f"📺 **YouTube動画**\n\n{text}"
     
     return text
 
