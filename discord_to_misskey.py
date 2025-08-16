@@ -73,6 +73,29 @@ MAX_TEXT = 3000  # Misskeyのノート上限
 def truncate_for_misskey(text: str) -> str:
     return text if len(text) <= MAX_TEXT else (text[:MAX_TEXT-3] + '...')
 
+def customize_youtube_display(text: str) -> str:
+    """YouTubeリンクの表示をカスタマイズして、サムネイルを大きく表示する"""
+    import re
+    
+    # YouTubeリンクのパターンを検出
+    youtube_patterns = [
+        r'https?://(?:www\.)?youtube\.com/shorts/([a-zA-Z0-9_-]+)',
+        r'https?://(?:www\.)?youtube\.com/watch\?v=([a-zA-Z0-9_-]+)',
+        r'https?://(?:www\.)?youtu\.be/([a-zA-Z0-9_-]+)'
+    ]
+    
+    for pattern in youtube_patterns:
+        match = re.search(pattern, text)
+        if match:
+            video_id = match.group(1)
+            # YouTubeリンクを強調表示
+            if 'shorts' in pattern:
+                return f"🎬 **YouTube Short**\n\n{text}\n\n📺 *大きなサムネイルで表示*"
+            else:
+                return f"📺 **YouTube動画**\n\n{text}\n\n🎬 *サムネイルサイズ: 大*"
+    
+    return text
+
 def post_to_misskey(text: str, media_ids=None):
     payload = {
         'i': MISSKEY_TOKEN,
@@ -102,7 +125,10 @@ async def on_message(message: discord.Message):
     if not (message.content or message.attachments):
         return
 
-    text = truncate_for_misskey(message.content or '')
+    # テキストをカスタマイズ（YouTubeリンクの表示を改善）
+    original_text = message.content or ''
+    text = customize_youtube_display(original_text)
+    text = truncate_for_misskey(text)
     media_ids = []
 
     # 添付画像/動画もMisskeyに上げたい場合（任意）
