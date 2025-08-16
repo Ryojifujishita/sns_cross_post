@@ -73,8 +73,19 @@ MAX_TEXT = 3000  # Misskeyのノート上限
 def truncate_for_misskey(text: str) -> str:
     return text if len(text) <= MAX_TEXT else (text[:MAX_TEXT-3] + '...')
 
+def get_youtube_thumbnail_urls(video_id: str) -> dict:
+    """YouTubeの高解像度サムネイルURLを生成"""
+    base_url = f"https://img.youtube.com/vi/{video_id}"
+    return {
+        'maxres': f'{base_url}/maxresdefault.jpg',      # 1280x720 (最高解像度)
+        'sd': f'{base_url}/sddefault.jpg',             # 640x480 (標準解像度) ← 推奨
+        'hq': f'{base_url}/hqdefault.jpg',             # 480x360 (高解像度)
+        'mq': f'{base_url}/mqdefault.jpg',             # 320x180 (中解像度)
+        'default': f'{base_url}/default.jpg'            # 120x90 (低解像度)
+    }
+
 def customize_youtube_display(text: str) -> str:
-    """YouTubeリンクの表示をカスタマイズして、サムネイルを大きく表示する"""
+    """YouTubeリンクの表示をカスタマイズして、標準解像度サムネイルを表示する"""
     import re
     
     # YouTubeリンクのパターンを検出
@@ -88,11 +99,11 @@ def customize_youtube_display(text: str) -> str:
         match = re.search(pattern, text)
         if match:
             video_id = match.group(1)
-            # YouTubeリンクを強調表示
+            # 標準解像度サムネイルの情報を追加
             if 'shorts' in pattern:
-                return f"🎬 **YouTube Short**\n\n{text}"
+                return f"🎬 **YouTube Short**\n\n{text}\n\n📺 *標準解像度サムネイル (640x480)*"
             else:
-                return f"📺 **YouTube動画**\n\n{text}"
+                return f"📺 **YouTube動画**\n\n{text}\n\n🎬 *標準解像度サムネイル (640x480)*"
     
     return text
 
