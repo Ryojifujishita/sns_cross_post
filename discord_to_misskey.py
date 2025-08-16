@@ -1,6 +1,8 @@
 import discord
 import requests
 import os
+import aiohttp
+import asyncio
 
 # 環境変数から設定を読み込み
 def get_env_var(var_name, required=True):
@@ -104,24 +106,50 @@ async def on_message(message: discord.Message):
     media_ids = []
 
     # 添付画像/動画もMisskeyに上げたい場合（任意）
-    # ※Discordの添付URLは基本的に直接GETできます
-    for att in message.attachments:
+    print(f"📎 添付ファイル数: {len(message.attachments)}")
+    for i, att in enumerate(message.attachments):
         try:
+            print(f"📁 ファイル {i+1}: {att.filename} ({att.size} bytes)")
+            
+            # ファイルを読み込み
             file_bytes = await att.read()
-            files_create = requests.post(
-                f'{MISSKEY_HOST}/api/drive/files/create',
-                data={'i': MISSKEY_TOKEN},
-                files={'file': (att.filename, file_bytes)}
-            )
-            if files_create.status_code == 200:
-                media_ids.append(files_create.json()['id'])
-            else:
-                print('Drive upload failed:', files_create.status_code, files_create.text)
+            print(f"📥 ファイル読み込み完了: {len(file_bytes)} bytes")
+            
+            # MisskeyのDriveにアップロード
+            async with aiohttp.ClientSession() as session:
+                data = aiohttp.FormData()
+                data.add_field('i', MISSKEY_TOKEN)
+                data.add_field('file', file_bytes, filename=att.filename)
+                
+                async with session.post(
+                    f'{MISSKEY_HOST}/api/drive/files/create',
+                    data=data
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        media_id = result.get('id')
+                        if media_id:
+                            media_ids.append(media_id)
+                            print(f"✅ ファイルアップロード成功: {att.filename} -> ID: {media_id}")
+                        else:
+                            print(f"❌ ファイルアップロード失敗: IDが見つかりません - {result}")
+                    else:
+                        error_text = await response.text()
+                        print(f"❌ ファイルアップロード失敗: {response.status} - {error_text}")
+                        
         except Exception as e:
-            print('Attachment upload error:', e)
+            print(f"❌ ファイル処理エラー ({att.filename}): {e}")
+            import traceback
+            traceback.print_exc()
 
-    resp = post_to_misskey(text, media_ids or None)
-    print('Misskey status:', resp.status_code, resp.text)
+    # Misskeyに投稿
+    if media_ids:
+        print(f"🖼️ 画像付きで投稿: {len(media_ids)}枚の画像")
+    else:
+        print("📝 テキストのみ投稿")
+    
+    resp = post_to_misskey(text, media_ids if media_ids else None)
+    print(f'📤 Misskey投稿結果: {resp.status_code} - {resp.text}')
 
 if __name__ == "__main__":
     # 環境変数の検証
