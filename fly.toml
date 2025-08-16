@@ -1,0 +1,41 @@
+# fly.toml app configuration file generated for discord-misskey-bot on 2025-08-16T13:51:00Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+
+app = "discord-misskey-bot"
+primary_region = "nrt"
+
+[build]
+
+[env]
+  PYTHON_VERSION = "3.11"
+
+[processes]
+  app = "python discord_to_misskey.py"
+
+[[services]]
+  internal_port = 8080
+  processes = ["app"]
+  protocol = "tcp"
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.tcp_checks]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"
+
+[deploy]
+  release_command = "echo 'Deploying Discord to Misskey bot...'"
