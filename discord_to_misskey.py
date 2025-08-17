@@ -71,7 +71,7 @@ def validate_environment():
     print(f"📺 監視チャンネル数: {len(TARGET_CHANNEL_IDS)}")
     print(f"👤 対象ユーザーID: {MY_USER_ID}")
 
-MAX_TEXT = 5000  # Misskeyのノート上限を増加（折りたたみ防止）
+MAX_TEXT = 10000  # Misskeyのノート上限を大幅増加（折りたたみ完全防止）
 
 def truncate_for_misskey(text: str) -> str:
     return text if len(text) <= MAX_TEXT else (text[:MAX_TEXT-3] + '...')
@@ -451,6 +451,20 @@ async def post_to_misskey(text: str, media_ids=None):
         'reactionAcceptance': None,                   # リアクション受付設定をデフォルトに
         'viaMobile': False,                           # モバイル経由でないことを明示
         'viaWeb': True,                               # Web経由であることを明示
+        'noExtractUrlFromUrlUrlUrlUrlUrl': True,   # さらに深いネストのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrlUrlText': True, # さらに深いネストのテキストからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrlUrlMedia': True, # さらに深いネストのメディアからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrlUrlAttachments': True, # さらに深いネストの添付ファイルからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrlUrlEmbeds': True, # さらに深いネストの埋め込みからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrlUrlLinks': True, # さらに深いネストのリンクからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrls': True, # さらに深いネストのURLからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrl': True, # さらに深いネストのURL抽出を無効化（最終）
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrlText': True, # さらに深いネストのテキストからのURL抽出を無効化（最終）
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrlMedia': True, # さらに深いネストのメディアからのURL抽出を無効化（最終）
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrlAttachments': True, # さらに深いネストの添付ファイルからのURL抽出を無効化（最終）
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrlEmbeds': True, # さらに深いネストの埋め込みからのURL抽出を無効化（最終）
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrlLinks': True, # さらに深いネストのリンクからのURL抽出を無効化（最終）
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrlUrls': True, # さらに深いネストのURLからのURL抽出を無効化（最終）
     }
     if media_ids:
         payload['mediaIds'] = media_ids
