@@ -185,7 +185,7 @@ def extract_youtube_video_id(text: str) -> str:
     print(f"🔍 ===== extract_youtube_video_id終了 =====")
     return None
 
-def customize_youtube_display(text: str, video_id: str = None) -> str:
+async def customize_youtube_display(text: str, video_id: str = None) -> str:
     """YouTubeリンクの表示をカスタマイズ"""
     print(f"🔍 ===== customize_youtube_display開始 =====")
     print(f"🔍 入力テキスト: {repr(text)}")
