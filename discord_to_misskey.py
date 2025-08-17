@@ -71,7 +71,7 @@ def validate_environment():
     print(f"📺 監視チャンネル数: {len(TARGET_CHANNEL_IDS)}")
     print(f"👤 対象ユーザーID: {MY_USER_ID}")
 
-MAX_TEXT = 2000  # Misskeyのノート上限を適切な長さに調整（折りたたみ防止）
+MAX_TEXT = 1000  # Misskeyのノート上限を大幅短縮（折りたたみ完全防止）
 
 def truncate_for_misskey(text: str) -> str:
     return text if len(text) <= MAX_TEXT else (text[:MAX_TEXT-3] + '...')
@@ -100,7 +100,7 @@ async def download_youtube_thumbnail(video_id: str, quality: str = 'maxres') -> 
                 else:
                     # 最高解像度が利用できない場合は標準解像度を試す
                     if quality == 'maxres':
-                        return await download_youtube_thumbnail(video_id, 'sd')
+                        return await download_youtube_thumbnail(video_id, 'medium')  # sd → mediumに変更
                     return None
     except Exception as e:
         print(f"❌ サムネイルダウンロードエラー: {e}")
@@ -132,7 +132,6 @@ async def get_youtube_video_info(video_id: str) -> dict:
                         return {
                             'title': snippet.get('title', ''),
                             'channel': snippet.get('channelTitle', ''),
-                            'description': snippet.get('description', ''),
                             'published_at': snippet.get('publishedAt', ''),
                             'thumbnails': snippet.get('thumbnails', {}),
                             'tags': snippet.get('tags', []),
@@ -285,6 +284,9 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
         # 特殊文字で囲まれたURLも削除
         final_text = final_text.replace(f"【{url}】", "")
     
+    # 余分な改行を削除してテキストを短縮
+    final_text = final_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
+    
     # Discord風カードを追加
     if video_id:
         try:
@@ -294,11 +296,11 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
                 print(f"🔍 YouTube動画情報取得成功: {video_info.get('title', 'N/A')}")
                 
                 # サムネイル画像をダウンロードしてMisskeyにアップロード
-                thumbnail_url = video_info.get('thumbnails', {}).get('high', {}).get('url')
+                thumbnail_url = video_info.get('thumbnails', {}).get('medium', {}).get('url')  # high → mediumに変更
                 if thumbnail_url:
                     try:
                         print(f"🔍 サムネイル画像のダウンロードを開始: {thumbnail_url}")
-                        thumbnail_data = await download_youtube_thumbnail(video_id, 'high')
+                        thumbnail_data = await download_youtube_thumbnail(video_id, 'medium')  # high → mediumに変更
                         if thumbnail_data:
                             print(f"🔍 サムネイル画像のダウンロード成功")
                             # 画像をMisskeyにアップロード
@@ -376,26 +378,16 @@ def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
     return card
 
 def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
-    """Discord風のカードを作成（短縮版）"""
+    """Discord風のカードを作成（最小限版）"""
     if video_info and 'title' in video_info:
         title = video_info['title']
         channel = video_info.get('channel', 'Unknown Channel')
-        description = video_info.get('description', '')
-        # 説明文を大幅短縮（50文字以内）
-        if len(description) > 50:
-            description = description[:47] + "..."
     else:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
-        description = ""
     
-    # シンプルで短いカード形式（折りたたみ防止）
-    card = f"""📺 {title}
-👤 {channel}
-🔗 https://youtube.com/watch?v={video_id}"""
-    
-    if description:
-        card += f"\n{description}"
+    # 最小限のカード形式（折りたたみ完全防止）
+    card = f"📺 {title}\n👤 {channel}\n🔗 https://youtube.com/watch?v={video_id}"
     
     return card
 
