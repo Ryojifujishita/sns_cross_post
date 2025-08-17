@@ -162,31 +162,26 @@ def customize_youtube_display(text: str, video_id: str = None) -> str:
     original_urls = []
     print(f"🔍 URL検索を開始します")
     
-    youtu_be_url = f"https://youtu.be/{video_id}"
-    youtube_watch_url = f"https://www.youtube.com/watch?v={video_id}"
-    youtube_shorts_url = f"https://www.youtube.com/shorts/{video_id}"
+    # 実際のURLパターンに合わせて検索
+    actual_url = f"https://youtube.com/shorts/{video_id}"
+    actual_url_with_params = f"https://youtube.com/shorts/{video_id}?si="
     
-    print(f"🔍 検索対象URL1: {youtu_be_url}")
-    print(f"🔍 検索対象URL2: {youtube_watch_url}")
-    print(f"🔍 検索対象URL3: {youtube_shorts_url}")
+    print(f"🔍 検索対象URL1: {actual_url}")
+    print(f"🔍 検索対象URL2: {actual_url_with_params}")
     
-    if youtu_be_url in text:
-        print(f"🔍 ✅ youtu.be URLを発見: {youtu_be_url}")
-        original_urls.append(youtu_be_url)
+    # 部分一致で検索
+    if actual_url in text:
+        print(f"🔍 ✅ 完全一致URLを発見: {actual_url}")
+        original_urls.append(actual_url)
+    elif any(url in text for url in [f"https://youtube.com/shorts/{video_id}", f"https://www.youtube.com/shorts/{video_id}", f"https://youtu.be/{video_id}"]):
+        # 部分一致で検索
+        for pattern in [f"https://youtube.com/shorts/{video_id}", f"https://www.youtube.com/shorts/{video_id}", f"https://youtu.be/{video_id}"]:
+            if pattern in text:
+                print(f"🔍 ✅ 部分一致URLを発見: {pattern}")
+                original_urls.append(pattern)
+                break
     else:
-        print(f"🔍 ❌ youtu.be URLが見つかりません")
-    
-    if youtube_watch_url in text:
-        print(f"🔍 ✅ youtube.com/watch URLを発見: {youtube_watch_url}")
-        original_urls.append(youtube_watch_url)
-    else:
-        print(f"🔍 ❌ youtube.com/watch URLが見つかりません")
-    
-    if youtube_shorts_url in text:
-        print(f"🔍 ✅ youtube.com/shorts URLを発見: {youtube_shorts_url}")
-        original_urls.append(youtube_shorts_url)
-    else:
-        print(f"🔍 ❌ youtube.com/shorts URLが見つかりません")
+        print(f"🔍 ❌ どのURLパターンにも一致しません")
     
     print(f"🔍 検出されたURL数: {len(original_urls)}")
     print(f"🔍 検出されたURL一覧: {original_urls}")
