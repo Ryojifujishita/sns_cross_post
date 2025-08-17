@@ -71,7 +71,7 @@ def validate_environment():
     print(f"📺 監視チャンネル数: {len(TARGET_CHANNEL_IDS)}")
     print(f"👤 対象ユーザーID: {MY_USER_ID}")
 
-MAX_TEXT = 10000  # Misskeyのノート上限を大幅増加（折りたたみ完全防止）
+MAX_TEXT = 2000  # Misskeyのノート上限を適切な長さに調整（折りたたみ防止）
 
 def truncate_for_misskey(text: str) -> str:
     return text if len(text) <= MAX_TEXT else (text[:MAX_TEXT-3] + '...')
@@ -376,26 +376,26 @@ def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
     return card
 
 def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
-    """Discord風のカードを作成"""
+    """Discord風のカードを作成（短縮版）"""
     if video_info and 'title' in video_info:
         title = video_info['title']
         channel = video_info.get('channel', 'Unknown Channel')
         description = video_info.get('description', '')
-        # 説明文を短縮（100文字以内）
-        if len(description) > 100:
-            description = description[:97] + "..."
+        # 説明文を大幅短縮（50文字以内）
+        if len(description) > 50:
+            description = description[:47] + "..."
     else:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
         description = ""
     
-    # シンプルで見やすいカード形式
-    card = f"""📺 **{title}**
+    # シンプルで短いカード形式（折りたたみ防止）
+    card = f"""📺 {title}
 👤 {channel}
 🔗 https://youtube.com/watch?v={video_id}"""
     
     if description:
-        card += f"\n\n{description}"
+        card += f"\n{description}"
     
     return card
 
@@ -464,7 +464,7 @@ async def post_to_misskey(text: str, media_ids=None):
         'noExtractUrlFromUrlUrlUrlUrlUrlUrlAttachments': True, # さらに深いネストの添付ファイルからのURL抽出を無効化（最終）
         'noExtractUrlFromUrlUrlUrlUrlUrlUrlEmbeds': True, # さらに深いネストの埋め込みからのURL抽出を無効化（最終）
         'noExtractUrlFromUrlUrlUrlUrlUrlUrlLinks': True, # さらに深いネストのリンクからのURL抽出を無効化（最終）
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrlUrls': True, # さらに深いネストのURLからのURL抽出を無効化（最終）
+        'noExtractUrlFromUrlUrlUrlUrlUrlUrls': True, # さらに深いネストのURLからのURL抽出を無効化（最終）
     }
     if media_ids:
         payload['mediaIds'] = media_ids
