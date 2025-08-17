@@ -279,9 +279,14 @@ def customize_youtube_display(text: str, video_id: str = None) -> str:
     else:
         print(f"🔍 検出されたURLがないため、テキストは変更されません")
     
-    print(f"🔍 ===== customize_youtube_display終了 =====")
-    print(f"🔍 最終結果: {repr(modified_text)}")
-    return modified_text
+    # 最終的なテキストからURLを完全に削除して、OGP表示を防ぐ
+    final_text = modified_text
+    for url in original_urls:
+        # 特殊文字で囲まれたURLも削除
+        final_text = final_text.replace(f"【{url}】", "")
+    
+    print(f"🔍 最終的なテキスト（URL完全削除後）: {repr(final_text)}")
+    return final_text
 
 def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
     """カスタムYouTubeカードを作成"""
@@ -346,7 +351,21 @@ def post_to_misskey(text: str, media_ids=None):
         'noExtractUrlFromUrlAttachments': True,  # URL添付ファイルからのURL抽出を無効化
         'noExtractUrlFromUrlEmbeds': True,       # URL埋め込みからのURL抽出を無効化
         'noExtractUrlFromUrlLinks': True,        # URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrls': True          # URL URLからのURL抽出を無効化（重複）
+        'noExtractUrlFromUrlUrls': True,         # URL URLからのURL抽出を無効化（重複）
+        'noExtractUrlFromUrlUrl': True,          # URL URLからのURL抽出を無効化（重複）
+        'noExtractUrlFromUrlUrlText': True,      # URL URLテキストからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlMedia': True,     # URL URLメディアからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlAttachments': True,  # URL URL添付ファイルからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlEmbeds': True,       # URL URL埋め込みからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlLinks': True,        # URL URLリンクからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrls': True,         # URL URL URLからのURL抽出を無効化（重複）
+        'noExtractUrlFromUrlUrlUrl': True,          # URL URL URLからのURL抽出を無効化（重複）
+        'noExtractUrlFromUrlUrlUrlText': True,      # URL URL URLテキストからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlMedia': True,     # URL URL URLメディアからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlAttachments': True,  # URL URL URL添付ファイルからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlEmbeds': True,       # URL URL URL埋め込みからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlLinks': True,        # URL URL URLリンクからのURL抽出を無効化
+        'noExtractUrlFromUrlUrlUrlUrls': True          # URL URL URL URLからのURL抽出を無効化（重複）
     }
     if media_ids:
         payload['mediaIds'] = media_ids
