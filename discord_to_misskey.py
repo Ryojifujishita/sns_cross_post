@@ -285,7 +285,28 @@ def customize_youtube_display(text: str, video_id: str = None) -> str:
         # 特殊文字で囲まれたURLも削除
         final_text = final_text.replace(f"【{url}】", "")
     
-    print(f"🔍 最終的なテキスト（URL完全削除後）: {repr(final_text)}")
+    # Discord風カードを追加
+    if video_id:
+        try:
+            # YouTube動画情報を取得
+            video_info = await get_youtube_video_info(video_id)
+            if video_info:
+                print(f"🔍 YouTube動画情報取得成功: {video_info.get('title', 'N/A')}")
+                discord_card = create_discord_style_card(video_id, video_info)
+                final_text = f"{final_text}\n\n{discord_card}"
+                print(f"🔍 Discord風カードを追加しました")
+            else:
+                print(f"🔍 YouTube動画情報の取得に失敗しました")
+                fallback_card = create_discord_style_card(video_id, None)
+                final_text = f"{final_text}\n\n{fallback_card}"
+                print(f"🔍 フォールバックカードを追加しました")
+        except Exception as e:
+            print(f"🔍 カード作成エラー: {e}")
+            fallback_card = create_discord_style_card(video_id, None)
+            final_text = f"{final_text}\n\n{fallback_card}"
+            print(f"🔍 エラー時のフォールバックカードを追加しました")
+    
+    print(f"🔍 最終的なテキスト（カード追加後）: {repr(final_text)}")
     return final_text
 
 def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
@@ -321,7 +342,41 @@ def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
 """
     return card
 
-def post_to_misskey(text: str, media_ids=None):
+def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
+    """Discordのような縦長カードを作成"""
+    if not video_info:
+        # 動画情報がない場合のフォールバック
+        return f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎬 **YouTube動画**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📺 **動画ID**: {video_id}
+🔗 **リンク**: https://youtu.be/{video_id}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+    
+    # 動画情報がある場合のDiscord風カード
+    title = video_info.get('title', 'タイトル不明')
+    channel = video_info.get('channel_title', 'チャンネル不明')
+    description = video_info.get('description', '')
+    
+    # 説明文を短縮
+    if len(description) > 150:
+        description = description[:150] + '...'
+    
+    # Discord風のカード形式
+    card = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎬 **{title}**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📺 **チャンネル**: {channel}
+📝 **説明**: {description}
+🔗 **リンク**: https://youtu.be/{video_id}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+    return card
+
+async def post_to_misskey(text: str, media_ids=None):
     payload = {
         'i': MISSKEY_TOKEN,
         'text': text,
@@ -351,25 +406,14 @@ def post_to_misskey(text: str, media_ids=None):
         'noExtractUrlFromUrlAttachments': True,  # URL添付ファイルからのURL抽出を無効化
         'noExtractUrlFromUrlEmbeds': True,       # URL埋め込みからのURL抽出を無効化
         'noExtractUrlFromUrlLinks': True,        # URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrls': True,         # URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrl': True,          # URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlText': True,      # URL URLテキストからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlMedia': True,     # URL URLメディアからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlAttachments': True,  # URL URL添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlEmbeds': True,       # URL URL埋め込みからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlLinks': True,        # URL URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrls': True,         # URL URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlUrl': True,          # URL URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlUrlText': True,      # URL URL URLテキストからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlMedia': True,     # URL URL URLメディアからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlAttachments': True,  # URL URL URL添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlEmbeds': True,       # URL URL URL埋め込みからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlLinks': True,        # URL URL URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrls': True          # URL URL URL URLからのURL抽出を無効化（重複）
+        'noExtractUrlFromUrlUrls': True          # URL URLからのURL抽出を無効化（重複）
     }
     if media_ids:
         payload['mediaIds'] = media_ids
-    return requests.post(f'{MISSKEY_HOST}/api/notes/create', json=payload)
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f'{MISSKEY_HOST}/api/notes/create', json=payload) as response:
+            return response
 
 @client.event
 async def on_ready():
@@ -468,7 +512,7 @@ async def on_message(message: discord.Message):
 
     # テキストをカスタマイズ（Misskeyの自動埋め込みを回避）
     print(f"🔍 元のテキスト: {repr(original_text)}")
-    text = customize_youtube_display(original_text, video_id)
+    text = await customize_youtube_display(original_text, video_id)
     print(f"🔍 カスタマイズ後: {repr(text)}")
     text = truncate_for_misskey(text)
     print(f"🔍 最終テキスト: {repr(text)}")
@@ -523,8 +567,8 @@ async def on_message(message: discord.Message):
     else:
         print("📝 テキストのみ投稿")
     
-    resp = post_to_misskey(text, media_ids if media_ids else None)
-    print(f'📤 Misskey投稿結果: {resp.status_code} - {resp.text}')
+    resp = await post_to_misskey(text, media_ids if media_ids else None)
+    print(f'📤 Misskey投稿結果: {resp.status} - {await resp.text()}')
 
 if __name__ == "__main__":
     # 環境変数の検証
