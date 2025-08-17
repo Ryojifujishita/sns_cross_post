@@ -457,7 +457,14 @@ async def post_to_misskey(text: str, media_ids=None):
     
     async with aiohttp.ClientSession() as session:
         async with session.post(f'{MISSKEY_HOST}/api/notes/create', json=payload) as response:
-            return response
+            try:
+                response_text = await response.text()
+                print(f'📤 Misskey投稿結果: {response.status} - {response_text}')
+                return response
+            except Exception as e:
+                print(f'⚠️ レスポンス読み取りエラー: {e}')
+                print(f'📤 Misskey投稿結果: {response.status} - レスポンス読み取り失敗')
+                return response
 
 async def upload_to_misskey_drive(file_data: bytes, filename: str) -> str | None:
     """MisskeyのDriveに画像をアップロード"""
@@ -635,7 +642,12 @@ async def on_message(message: discord.Message):
         print("📝 テキストのみ投稿")
     
     resp = await post_to_misskey(text, media_ids if media_ids else None)
-    print(f'📤 Misskey投稿結果: {resp.status} - {await resp.text()}')
+    try:
+        resp_text = await resp.text()
+        print(f'📤 Misskey投稿結果: {resp.status} - {resp_text}')
+    except Exception as e:
+        print(f'⚠️ レスポンス読み取りエラー: {e}')
+        print(f'📤 Misskey投稿結果: {resp.status} - レスポンス読み取り失敗')
 
 if __name__ == "__main__":
     # 環境変数の検証
