@@ -5,6 +5,7 @@ import aiohttp
 import asyncio
 import re
 from urllib.parse import urlparse, parse_qs
+import json
 
 # 環境変数から設定を読み込み
 def get_env_var(var_name, required=True):
@@ -105,6 +106,50 @@ async def download_youtube_thumbnail(video_id: str, quality: str = 'maxres') -> 
         print(f"❌ サムネイルダウンロードエラー: {e}")
         return None
 
+async def get_youtube_video_info(video_id: str) -> dict:
+    """YouTube APIを使用して動画情報を取得"""
+    try:
+        # YouTube Data API v3を使用
+        api_key = os.getenv('YOUTUBE_API_KEY')
+        if not api_key:
+            print(f"⚠️ YouTube APIキーが設定されていません")
+            return None
+        
+        url = f"https://www.googleapis.com/youtube/v3/videos"
+        params = {
+            'part': 'snippet,contentDetails,statistics',
+            'id': video_id,
+            'key': api_key
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get('items'):
+                        item = data['items'][0]
+                        snippet = item['snippet']
+                        return {
+                            'title': snippet.get('title', ''),
+                            'channel_title': snippet.get('channelTitle', ''),
+                            'description': snippet.get('description', ''),
+                            'published_at': snippet.get('publishedAt', ''),
+                            'thumbnails': snippet.get('thumbnails', {}),
+                            'tags': snippet.get('tags', []),
+                            'category_id': snippet.get('categoryId', ''),
+                            'default_language': snippet.get('defaultLanguage', ''),
+                            'default_audio_language': snippet.get('defaultAudioLanguage', '')
+                        }
+                    else:
+                        print(f"⚠️ 動画情報が見つかりません: {video_id}")
+                        return None
+                else:
+                    print(f"❌ YouTube API エラー: {response.status}")
+                    return None
+    except Exception as e:
+        print(f"❌ YouTube動画情報取得エラー: {e}")
+        return None
+
 def extract_youtube_video_id(text: str) -> str:
     """テキストからYouTubeのビデオIDを抽出"""
     print(f"🔍 ===== extract_youtube_video_id開始 =====")
@@ -192,11 +237,34 @@ def customize_youtube_display(text: str, video_id: str = None) -> str:
     
     for i, url in enumerate(original_urls):
         print(f"🔍 URL {i+1} を削除中: {url}")
-        old_text = modified_text
-        modified_text = modified_text.replace(url, "")
-        print(f"🔍 削除前: {repr(old_text)}")
-        print(f"🔍 削除後: {repr(modified_text)}")
-        print(f"🔍 変更があったか: {old_text != modified_text}")
+        
+        # 正規表現を使用してクエリパラメータを含むURLを完全に削除
+        import re
+        
+        # ベースURLから始まるパターン（クエリパラメータ付きも含む）
+        base_url = url.split('?')[0]  # クエリパラメータを除いたベースURL
+        url_regex = re.escape(base_url) + r'\?.*'  # クエリパラメータ付きの正規表現
+        
+        print(f"🔍 正規表現パターン: {url_regex}")
+        
+        # 正規表現で検索
+        match = re.search(url_regex, modified_text)
+        if match:
+            full_url = match.group(0)
+            print(f"🔍 完全なURLを発見: {full_url}")
+            old_text = modified_text
+            modified_text = modified_text.replace(full_url, "")
+            print(f"🔍 削除前: {repr(old_text)}")
+            print(f"🔍 削除後: {repr(modified_text)}")
+            print(f"🔍 変更があったか: {old_text != modified_text}")
+        else:
+            # 正規表現で見つからない場合は通常の置換
+            print(f"🔍 正規表現で見つからないため、通常の置換を実行")
+            old_text = modified_text
+            modified_text = modified_text.replace(url, "")
+            print(f"🔍 削除前: {repr(old_text)}")
+            print(f"🔍 削除後: {repr(modified_text)}")
+            print(f"🔍 変更があったか: {old_text != modified_text}")
     
     print(f"🔍 URL削除後のテキスト: {repr(modified_text)}")
     
@@ -204,7 +272,7 @@ def customize_youtube_display(text: str, video_id: str = None) -> str:
     if original_urls:
         print(f"🔍 プレーンテキストURLの生成を開始")
         # URLを完全に無効化するために特殊文字で囲む
-        url_text = "\n\n".join([f"[{url}]" for url in original_urls])
+        url_text = "\n\n".join([f"【{url}】" for url in original_urls])
         print(f"🔍 生成されたURLテキスト: {repr(url_text)}")
         modified_text = f"{modified_text}\n\n{url_text}"
         print(f"🔍 最終テキストに追加後: {repr(modified_text)}")
@@ -214,6 +282,39 @@ def customize_youtube_display(text: str, video_id: str = None) -> str:
     print(f"🔍 ===== customize_youtube_display終了 =====")
     print(f"🔍 最終結果: {repr(modified_text)}")
     return modified_text
+
+def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
+    """カスタムYouTubeカードを作成"""
+    if not video_info:
+        # 動画情報がない場合のフォールバック
+        return f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎬 YouTube動画
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📺 動画ID: {video_id}
+🔗 https://youtu.be/{video_id}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+    
+    # 動画情報がある場合のカスタムカード
+    title = video_info.get('title', 'タイトル不明')
+    channel = video_info.get('channel_title', 'チャンネル不明')
+    description = video_info.get('description', '')
+    
+    # 説明文を短縮
+    if len(description) > 100:
+        description = description[:100] + '...'
+    
+    card = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎬 **{title}**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📺 **チャンネル**: {channel}
+📝 **説明**: {description}
+🔗 **リンク**: https://youtu.be/{video_id}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+    return card
 
 def post_to_misskey(text: str, media_ids=None):
     payload = {
