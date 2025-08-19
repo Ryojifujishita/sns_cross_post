@@ -256,10 +256,37 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
         # 動画情報を取得
         video_info = await get_youtube_video_info(video_id)
         custom_card = create_discord_style_card(video_id, video_info)
-        # autoplayパラメータ付きのURLで強制的にプレイヤーを開く
-        youtube_url = f"https://youtu.be/{video_id}?autoplay=1&mute=0&controls=1&rel=0"
+        # プレイヤーを開いた状態をデフォルトにするURLパラメータ
+        youtube_url = f"https://youtu.be/{video_id}?autoplay=0&mute=0&controls=1&rel=0&showinfo=1&modestbranding=0&iv_load_policy=3&cc_load_policy=1&fs=1"
         
-        final_text = f"{final_text}\n\n{custom_card}\n{youtube_url}"
+        # カスタムHTMLプレイヤーを追加（プレイヤーを強制表示）
+        custom_player_html = f"""
+<style>
+/* プレイヤー部分を常に表示 */
+.youtube-player, 
+[data-video-player],
+.video-player,
+iframe[src*="youtube"],
+iframe[src*="youtu.be"] {{
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    max-height: none !important;
+}}
+</style>
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 10px 0;">
+    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            src="https://www.youtube.com/embed/{video_id}?autoplay=0&mute=0&controls=1&rel=0&showinfo=1&modestbranding=0&iv_load_policy=3&cc_load_policy=1&fs=1" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+    </iframe>
+</div>
+"""
+        
+        final_text = f"{final_text}\n\n{custom_card}\n{youtube_url}\n\n{custom_player_html}"
         print(f"🔍 YouTube動画検出: {video_id} - カスタムカードとURL追加")
         print(f"🔍 カスタムカード: {custom_card}")
     
