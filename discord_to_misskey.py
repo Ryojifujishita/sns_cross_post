@@ -244,6 +244,10 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
         modified_text = modified_text.replace(f"【{url}】", "")
         print(f"🔍 特殊文字URL削除: 【{url}】")
     
+    # ?si=パラメータも削除
+    modified_text = re.sub(r'\?si=[a-zA-Z0-9_-]+', '', modified_text)
+    print(f"🔍 ?si=パラメータ削除完了")
+    
     # 余分な改行を削除してテキストを短縮
     final_text = modified_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
     
