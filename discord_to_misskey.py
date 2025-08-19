@@ -278,70 +278,17 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     else:
         print(f"🔍 検出されたURLがないため、テキストは変更されません")
     
-    # 最終的なテキストからURLを完全に削除して、OGP表示を防ぐ
-    final_text = modified_text
-    for url in original_urls:
-        # 特殊文字で囲まれたURLも削除
-        final_text = final_text.replace(f"【{url}】", "")
-    
     # 余分な改行を削除してテキストを短縮
-    final_text = final_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
+    final_text = modified_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
     
-    # Discord風カードを追加
+    # YouTube動画の場合は、Misskeyのネイティブ埋め込みを活用
     if video_id:
-        try:
-            # YouTube動画情報を取得
-            video_info = await get_youtube_video_info(video_id)
-            if video_info:
-                print(f"🔍 YouTube動画情報取得成功: {video_info.get('title', 'N/A')}")
-                
-                # サムネイル画像をダウンロードしてMisskeyにアップロード
-                thumbnail_url = video_info.get('thumbnails', {}).get('medium', {}).get('url')  # high → mediumに変更
-                if thumbnail_url:
-                    try:
-                        print(f"🔍 サムネイル画像のダウンロードを開始: {thumbnail_url}")
-                        thumbnail_data = await download_youtube_thumbnail(video_id, 'medium')  # high → mediumに変更
-                        if thumbnail_data:
-                            print(f"🔍 サムネイル画像のダウンロード成功")
-                            # 画像をMisskeyにアップロード
-                            media_id = await upload_to_misskey_drive(thumbnail_data, f"youtube_{video_id}.jpg")
-                            if media_id:
-                                print(f"🔍 Misskey Driveへのアップロード成功: {media_id}")
-                                # 画像付きでカードを作成
-                                discord_card = create_discord_style_card(video_id, video_info)
-                                final_text = f"{final_text}\n\n{discord_card}"
-                                # 画像IDを返すために、この関数の戻り値を変更する必要があります
-                                # 現在はテキストのみ返しているため、画像IDは別途処理が必要
-                            else:
-                                print(f"🔍 Misskey Driveへのアップロード失敗")
-                                discord_card = create_discord_style_card(video_id, video_info)
-                                final_text = f"{final_text}\n\n{discord_card}"
-                        else:
-                            print(f"🔍 サムネイル画像のダウンロード失敗")
-                            discord_card = create_discord_style_card(video_id, video_info)
-                            final_text = f"{final_text}\n\n{discord_card}"
-                    except Exception as e:
-                        print(f"🔍 サムネイル処理エラー: {e}")
-                        discord_card = create_discord_style_card(video_id, video_info)
-                        final_text = f"{final_text}\n\n{discord_card}"
-                else:
-                    print(f"🔍 サムネイルURLが見つかりません")
-                    discord_card = create_discord_style_card(video_id, video_info)
-                    final_text = f"{final_text}\n\n{discord_card}"
-                
-                print(f"🔍 Discord風カードを追加しました")
-            else:
-                print(f"🔍 YouTube動画情報の取得に失敗しました")
-                fallback_card = create_discord_style_card(video_id, None)
-                final_text = f"{final_text}\n\n{fallback_card}"
-        except Exception as e:
-            print(f"🔍 YouTube動画情報処理エラー: {e}")
-            fallback_card = create_discord_style_card(video_id, None)
-            final_text = f"{final_text}\n\n{fallback_card}"
-    else:
-        final_text = modified_text  # If no video_id, just use modified_text
+        # シンプルなテキストとYouTube URLを返す
+        youtube_url = f"https://youtube.com/watch?v={video_id}"
+        final_text = f"{final_text}\n\n{youtube_url}"
+        print(f"🔍 YouTube URLを追加: {youtube_url}")
     
-    print(f"🔍 最終的なテキスト（カード追加後）: {repr(final_text)}")
+    print(f"🔍 最終的なテキスト: {repr(final_text)}")
     return final_text
 
 def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
@@ -407,10 +354,9 @@ def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
     
-    # 絵文字なしのシンプルなカード形式（折りたたみ完全防止）
-    card = f"{title}\n{channel}\nhttps://youtube.com/watch?v={video_id}"
-    
-    return card
+    # MisskeyのネイティブYouTube埋め込みを活用するため、URLのみを返す
+    # カスタムカードは削除し、Misskeyの自動埋め込みに任せる
+    return f"https://youtube.com/watch?v={video_id}"
 
 async def post_to_misskey(text: str, media_ids=None):
     payload = {
@@ -420,64 +366,15 @@ async def post_to_misskey(text: str, media_ids=None):
         'noExtractMentions': True,  # メンションの自動抽出を無効化
         'noExtractHashtags': True,  # ハッシュタグの自動抽出を無効化
         'noExtractEmojis': True,    # 絵文字の自動抽出を無効化
-        'noExtractUrl': True,       # URLの自動埋め込みを無効化（重要！）
+        # URLの自動埋め込みを有効化（MisskeyのYouTube埋め込み機能を活用）
         'noExtractMentionsAsTags': True,  # メンションをタグとして抽出しない
         'noExtractHashtagsAsTags': True,  # ハッシュタグをタグとして抽出しない
         'noExtractEmojisAsTags': True,    # 絵文字をタグとして抽出しない
-        'noExtractUrlsAsTags': True,      # URLをタグとして抽出しない
-        'noExtractUrlFromText': True,     # テキストからのURL抽出を無効化
-        'noExtractUrlFromMedia': True,    # メディアからのURL抽出を無効化
-        'noExtractUrlFromAttachments': True,  # 添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromEmbeds': True,       # 埋め込みからのURL抽出を無効化
-        'noExtractUrlFromLinks': True,        # リンクからのURL抽出を無効化
-        'noExtractUrlFromUrls': True,         # URLからのURL抽出を無効化
-        'noExtractUrlFromUrl': True,          # URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlText': True,      # URLテキストからのURL抽出を無効化
-        'noExtractUrlFromUrlMedia': True,     # URLメディアからのURL抽出を無効化
-        'noExtractUrlFromUrlAttachments': True,  # URL添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromUrlEmbeds': True,       # URL埋め込みからのURL抽出を無効化
-        'noExtractUrlFromUrlLinks': True,        # URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrls': True,         # URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrl': True,          # URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlText': True,      # URL URLテキストからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlMedia': True,     # URL URLメディアからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlAttachments': True,  # URL URL添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlEmbeds': True,       # URL URL埋め込みからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlLinks': True,        # URL URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrls': True,         # URL URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlUrl': True,          # URL URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlUrlText': True,      # URL URL URLテキストからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlMedia': True,     # URL URL URLメディアからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlAttachments': True,  # URL URL URL添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlEmbeds': True,       # URL URL URL埋め込みからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlLinks': True,        # URL URL URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrls': True,         # URL URL URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlUrlUrl': True,          # URL URL URL URLからのURL抽出を無効化（重複）
-        'noExtractUrlFromUrlUrlUrlUrlText': True,      # URL URL URLテキストからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlMedia': True,     # URL URL URLメディアからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlAttachments': True,  # URL URL URL添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlEmbeds': True,       # URL URL URL埋め込みからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlLinks': True,        # URL URL URLリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrls': True,         # URL URL URL URLからのURL抽出を無効化（重複）
         'cw': None,                                   # 内容警告を無効化（折りたたみ防止）
         'localOnly': False,                           # ローカルのみ投稿を無効化
         'reactionAcceptance': None,                   # リアクション受付設定をデフォルトに
         'viaMobile': False,                           # モバイル経由でないことを明示
         'viaWeb': True,                               # Web経由であることを明示
-        'noExtractUrlFromUrlUrlUrlUrlUrl': True,   # さらに深いネストのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrlText': True, # さらに深いネストのテキストからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrlMedia': True, # さらに深いネストのメディアからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrlAttachments': True, # さらに深いネストの添付ファイルからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrlEmbeds': True, # さらに深いネストの埋め込みからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrlLinks': True, # さらに深いネストのリンクからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrls': True, # さらに深いネストのURLからのURL抽出を無効化
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrl': True, # さらに深いネストのURL抽出を無効化（最終）
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrlText': True, # さらに深いネストのテキストからのURL抽出を無効化（最終）
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrlMedia': True, # さらに深いネストのメディアからのURL抽出を無効化（最終）
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrlAttachments': True, # さらに深いネストの添付ファイルからのURL抽出を無効化（最終）
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrlEmbeds': True, # さらに深いネストの埋め込みからのURL抽出を無効化（最終）
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrlLinks': True, # さらに深いネストのリンクからのURL抽出を無効化（最終）
-        'noExtractUrlFromUrlUrlUrlUrlUrlUrls': True, # さらに深いネストのURLからのURL抽出を無効化（最終）
     }
     if media_ids:
         payload['mediaIds'] = media_ids
@@ -560,7 +457,7 @@ async def on_message(message: discord.Message):
     
     print(f"🔍 ===== メッセージ処理開始 =====")
     
-    # YouTubeリンクの検出とサムネイル取得
+    # YouTubeリンクの検出
     original_text = message.content or ''
     print(f"🔍 元のテキスト: {repr(original_text)}")
     print(f"🔍 テキスト長: {len(original_text)}")
@@ -569,47 +466,8 @@ async def on_message(message: discord.Message):
     print(f"🔍 抽出されたvideo_id: {video_id}")
     print(f"🔍 video_idの型: {type(video_id)}")
     
-    youtube_thumbnail_id = None
-    
-    # YouTubeリンクがある場合は高解像度サムネイルを取得
     if video_id:
         print(f"🎬 YouTube動画検出: {video_id}")
-        try:
-            # 最高解像度から順番に試行
-            thumbnail_bytes = None
-            for quality in ['maxres', 'sd', 'hq']:
-                thumbnail_bytes = await download_youtube_thumbnail(video_id, quality)
-                if thumbnail_bytes:
-                    print(f"✅ {quality}画質のサムネイル取得成功")
-                    break
-            
-            if thumbnail_bytes:
-                # サムネイルをMisskeyのDriveにアップロード
-                async with aiohttp.ClientSession() as session:
-                    data = aiohttp.FormData()
-                    data.add_field('i', MISSKEY_TOKEN)
-                    data.add_field('file', thumbnail_bytes, filename=f'youtube_thumbnail_{video_id}.jpg')
-                    
-                    async with session.post(
-                        f'{MISSKEY_HOST}/api/drive/files/create',
-                        data=data
-                    ) as response:
-                        if response.status == 200:
-                            result = await response.json()
-                            youtube_thumbnail_id = result.get('id')
-                            if youtube_thumbnail_id:
-                                print(f"✅ YouTubeサムネイルアップロード成功: ID: {youtube_thumbnail_id}")
-                            else:
-                                print(f"❌ YouTubeサムネイルアップロード失敗: IDが見つかりません")
-                        else:
-                            error_text = await response.text()
-                            print(f"❌ YouTubeサムネイルアップロード失敗: {response.status} - {error_text}")
-            else:
-                print("⚠️ YouTubeサムネイルの取得に失敗しました")
-        except Exception as e:
-            print(f"❌ YouTubeサムネイル処理エラー: {e}")
-            import traceback
-            traceback.print_exc()
 
     # テキストをカスタマイズ（Misskeyの自動埋め込みを回避）
     print(f"🔍 元のテキスト: {repr(original_text)}")
@@ -618,13 +476,8 @@ async def on_message(message: discord.Message):
     text = truncate_for_misskey(text)
     print(f"🔍 最終テキスト: {repr(text)}")
     
-    # メディアIDのリストを作成（YouTubeサムネイル + 添付ファイル）
+    # 添付ファイルの処理（任意）
     media_ids = []
-    if youtube_thumbnail_id:
-        media_ids.append(youtube_thumbnail_id)
-        print(f"🖼️ YouTubeサムネイルをメディアに追加: {youtube_thumbnail_id}")
-    
-    # 添付画像/動画もMisskeyに上げたい場合（任意）
     print(f"📎 添付ファイル数: {len(message.attachments)}")
     for i, att in enumerate(message.attachments):
         try:
