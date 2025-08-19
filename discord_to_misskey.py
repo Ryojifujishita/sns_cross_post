@@ -315,7 +315,7 @@ def remove_emojis(text: str) -> str:
     return emoji_pattern.sub('', text).strip()
 
 def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
-    """Discord風のカードを作成（最小限版）"""
+    """Discord風のカードを作成（カスタム版）"""
     if video_info and 'title' in video_info:
         title = remove_emojis(video_info['title'])  # タイトルから絵文字を削除
         channel = remove_emojis(video_info.get('channel', 'Unknown Channel'))  # チャンネル名から絵文字を削除
@@ -323,9 +323,12 @@ def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
     
-    # MisskeyのネイティブYouTube埋め込みを活用するため、youtu.be短縮URLを使用
-    # カスタムカードは削除し、Misskeyの自動埋め込みに任せる
-    return f"https://youtu.be/{video_id}"
+    # カスタムカードでMisskeyのOGPを上書き
+    return f"""
+🎵 **{title}** 🎬
+👤 **チャンネル**: {channel}
+▶️ **再生**: https://youtu.be/{video_id}
+"""
 
 async def post_to_misskey(text: str, media_ids=None):
     payload = {
