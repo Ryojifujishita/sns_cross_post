@@ -256,8 +256,8 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
         # 動画情報を取得
         video_info = await get_youtube_video_info(video_id)
         custom_card = create_discord_style_card(video_id, video_info)
-        # Misskeyのiframe埋め込みを活用した自動再生URL（embed形式）
-        youtube_url = f"https://www.youtube.com/embed/{video_id}?feature=oembed&autoplay=1&auto_play=1&mute=0&controls=1&rel=0&showinfo=1&modestbranding=0&iv_load_policy=3&cc_load_policy=1&fs=1&origin=https://misskey.io"
+        # カスタムCSS対応の最適化されたYouTube URL
+        youtube_url = f"https://youtu.be/{video_id}"
         
         final_text = f"{final_text}\n\n{custom_card}\n{youtube_url}"
         print(f"🔍 YouTube動画検出: {video_id} - カスタムカードとURL追加")
