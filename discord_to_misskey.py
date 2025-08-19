@@ -267,22 +267,8 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     
     print(f"🔍 URL削除後のテキスト: {repr(modified_text)}")
     
-    # プレーンテキストでURLを表示（クリック不可）
-    if original_urls:
-        print(f"🔍 プレーンテキストURLの生成を開始")
-        # URLを完全に無効化するために特殊文字で囲む
-        url_text = "\n\n".join([f"【{url}】" for url in original_urls])
-        print(f"🔍 生成されたURLテキスト: {repr(url_text)}")
-        modified_text = f"{modified_text}\n\n{url_text}"
-        print(f"🔍 最終テキストに追加後: {repr(modified_text)}")
-    else:
-        print(f"🔍 検出されたURLがないため、テキストは変更されません")
-    
-    # 最終的なテキストからURLを完全に削除して、OGP表示を防ぐ
+    # URLを完全に削除してOGP自動生成を防ぐ
     final_text = modified_text
-    for url in original_urls:
-        # 特殊文字で囲まれたURLも削除
-        final_text = final_text.replace(f"【{url}】", "")
     
     # 余分な改行を削除してテキストを短縮
     final_text = final_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
@@ -407,8 +393,8 @@ def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
     
-    # 絵文字なしのシンプルなカード形式（折りたたみ完全防止）
-    card = f"{title}\n{channel}\nhttps://youtube.com/watch?v={video_id}"
+    # URLを完全に削除してOGP自動生成を防ぐ
+    card = f"{title}\n{channel}\n動画ID: {video_id}"
     
     return card
 
