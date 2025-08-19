@@ -230,26 +230,25 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     print(f"🔍 検出されたURL数: {len(original_urls)}")
     print(f"🔍 検出されたURL一覧: {original_urls}")
     
-    # 元のテキストをそのまま保持（URL削除しない）
+    # 元のテキストからYouTube URLを削除
     modified_text = text
-    print(f"🔍 元のテキストを保持: {repr(modified_text)}")
+    print(f"🔍 元のテキスト: {repr(modified_text)}")
     
-    # URLの削除処理を無効化 - Misskeyのネイティブ埋め込みを活用
-    print(f"🔍 URL削除処理を無効化 - ネイティブ埋め込みに任せます")
+    # 検出されたURLを削除
+    for url in original_urls:
+        modified_text = modified_text.replace(url, "")
+        print(f"🔍 URL削除: {url}")
+    
+    # 特殊文字で囲まれたURLも削除
+    for url in original_urls:
+        modified_text = modified_text.replace(f"【{url}】", "")
+        print(f"🔍 特殊文字URL削除: 【{url}】")
     
     # 余分な改行を削除してテキストを短縮
     final_text = modified_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
     
-    # 特殊文字で囲まれたURLも削除
-    for url in original_urls:
-        final_text = final_text.replace(f"【{url}】", "")
-    
-    # さらに余分な改行を削除
-    final_text = final_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
-    
-    # YouTube動画の場合は、Misskeyのネイティブ埋め込みを活用
+    # YouTube動画の場合は、youtu.be形式のURLのみを追加
     if video_id:
-        # 元のURLをyoutu.be形式に変換して、Misskeyの自動埋め込みに任せる
         youtube_url = f"https://youtu.be/{video_id}"
         final_text = f"{final_text}\n\n{youtube_url}"
         print(f"🔍 YouTube動画検出: {video_id} - youtu.be形式で追加: {youtube_url}")
