@@ -251,11 +251,17 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     # 余分な改行を削除してテキストを短縮
     final_text = modified_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
     
-    # YouTube動画の場合は、youtu.be形式のURLのみを追加
+    # YouTube動画の場合は、カスタムカードとURLを追加
     if video_id:
-        youtube_url = f"https://youtu.be/{video_id}"
-        final_text = f"{final_text}\n\n{youtube_url}"
-        print(f"🔍 YouTube動画検出: {video_id} - youtu.be形式で追加: {youtube_url}")
+        # 動画情報を取得
+        video_info = await get_youtube_video_info(video_id)
+        custom_card = create_discord_style_card(video_id, video_info)
+        # autoplayパラメータ付きのURLで強制的にプレイヤーを開く
+        youtube_url = f"https://youtu.be/{video_id}?autoplay=1&mute=0&controls=1&rel=0"
+        
+        final_text = f"{final_text}\n\n{custom_card}\n{youtube_url}"
+        print(f"🔍 YouTube動画検出: {video_id} - カスタムカードとURL追加")
+        print(f"🔍 カスタムカード: {custom_card}")
     
     print(f"🔍 最終的なテキスト: {repr(final_text)}")
     return final_text
@@ -315,7 +321,7 @@ def remove_emojis(text: str) -> str:
     return emoji_pattern.sub('', text).strip()
 
 def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
-    """Discord風のカードを作成（カスタム版）"""
+    """Discord風のカードを作成（最適化版）"""
     if video_info and 'title' in video_info:
         title = remove_emojis(video_info['title'])  # タイトルから絵文字を削除
         channel = remove_emojis(video_info.get('channel', 'Unknown Channel'))  # チャンネル名から絵文字を削除
@@ -323,12 +329,9 @@ def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
     
-    # カスタムカードでMisskeyのOGPを上書き
-    return f"""
-🎵 **{title}** 🎬
-👤 **チャンネル**: {channel}
-▶️ **再生**: https://youtu.be/{video_id}
-"""
+    # Misskeyの制限を考慮した最適化されたカード
+    # シンプルなテキストで、OGPとの競合を避ける
+    return f"🎵 {title} - {channel} 🎬"
 
 async def post_to_misskey(text: str, media_ids=None):
     payload = {
