@@ -230,53 +230,12 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     print(f"🔍 検出されたURL数: {len(original_urls)}")
     print(f"🔍 検出されたURL一覧: {original_urls}")
     
-    # テキストからURLを完全に削除
+    # 元のテキストをそのまま保持（URL削除しない）
     modified_text = text
-    print(f"🔍 元のテキスト: {repr(modified_text)}")
+    print(f"🔍 元のテキストを保持: {repr(modified_text)}")
     
-    for i, url in enumerate(original_urls):
-        print(f"🔍 URL {i+1} を削除中: {url}")
-        
-        # 正規表現を使用してクエリパラメータを含むURLを完全に削除
-        import re
-        
-        # ベースURLから始まるパターン（クエリパラメータ付きも含む）
-        base_url = url.split('?')[0]  # クエリパラメータを除いたベースURL
-        url_regex = re.escape(base_url) + r'\?.*'  # クエリパラメータ付きの正規表現
-        
-        print(f"🔍 正規表現パターン: {url_regex}")
-        
-        # 正規表現で検索
-        match = re.search(url_regex, modified_text)
-        if match:
-            full_url = match.group(0)
-            print(f"🔍 完全なURLを発見: {full_url}")
-            old_text = modified_text
-            modified_text = modified_text.replace(full_url, "")
-            print(f"🔍 削除前: {repr(old_text)}")
-            print(f"🔍 削除後: {repr(modified_text)}")
-            print(f"🔍 変更があったか: {old_text != modified_text}")
-        else:
-            # 正規表現で見つからない場合は通常の置換
-            print(f"🔍 正規表現で見つからないため、通常の置換を実行")
-            old_text = modified_text
-            modified_text = modified_text.replace(url, "")
-            print(f"🔍 削除前: {repr(old_text)}")
-            print(f"🔍 削除後: {repr(modified_text)}")
-            print(f"🔍 変更があったか: {old_text != modified_text}")
-    
-    print(f"🔍 URL削除後のテキスト: {repr(modified_text)}")
-    
-    # プレーンテキストでURLを表示（クリック不可）
-    if original_urls:
-        print(f"🔍 プレーンテキストURLの生成を開始")
-        # URLを完全に無効化するために特殊文字で囲む
-        url_text = "\n\n".join([f"【{url}】" for url in original_urls])
-        print(f"🔍 生成されたURLテキスト: {repr(url_text)}")
-        modified_text = f"{modified_text}\n\n{url_text}"
-        print(f"🔍 最終テキストに追加後: {repr(modified_text)}")
-    else:
-        print(f"🔍 検出されたURLがないため、テキストは変更されません")
+    # URLの削除処理を無効化 - Misskeyのネイティブ埋め込みを活用
+    print(f"🔍 URL削除処理を無効化 - ネイティブ埋め込みに任せます")
     
     # 余分な改行を削除してテキストを短縮
     final_text = modified_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
@@ -290,10 +249,9 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     
     # YouTube動画の場合は、Misskeyのネイティブ埋め込みを活用
     if video_id:
-        # シンプルなテキストとYouTube URLを返す
-        youtube_url = f"https://youtube.com/watch?v={video_id}"
-        final_text = f"{final_text}\n\n{youtube_url}"
-        print(f"🔍 YouTube URLを追加: {youtube_url}")
+        # 元のURLをそのまま保持して、Misskeyの自動埋め込みに任せる
+        # カスタム処理は行わず、シンプルにテキストのみを返す
+        print(f"🔍 YouTube動画検出: {video_id} - ネイティブ埋め込みに任せます")
     
     print(f"🔍 最終的なテキスト: {repr(final_text)}")
     return final_text
