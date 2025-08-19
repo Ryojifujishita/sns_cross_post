@@ -249,9 +249,10 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     
     # YouTube動画の場合は、Misskeyのネイティブ埋め込みを活用
     if video_id:
-        # 元のURLをそのまま保持して、Misskeyの自動埋め込みに任せる
-        # カスタム処理は行わず、シンプルにテキストのみを返す
-        print(f"🔍 YouTube動画検出: {video_id} - ネイティブ埋め込みに任せます")
+        # 元のURLをyoutu.be形式に変換して、Misskeyの自動埋め込みに任せる
+        youtube_url = f"https://youtu.be/{video_id}"
+        final_text = f"{final_text}\n\n{youtube_url}"
+        print(f"🔍 YouTube動画検出: {video_id} - youtu.be形式で追加: {youtube_url}")
     
     print(f"🔍 最終的なテキスト: {repr(final_text)}")
     return final_text
@@ -319,9 +320,9 @@ def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
     
-    # MisskeyのネイティブYouTube埋め込みを活用するため、URLのみを返す
+    # MisskeyのネイティブYouTube埋め込みを活用するため、youtu.be短縮URLを使用
     # カスタムカードは削除し、Misskeyの自動埋め込みに任せる
-    return f"https://youtube.com/watch?v={video_id}"
+    return f"https://youtu.be/{video_id}"
 
 async def post_to_misskey(text: str, media_ids=None):
     payload = {
