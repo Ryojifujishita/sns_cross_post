@@ -256,7 +256,7 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
         # 動画情報を取得
         video_info = await get_youtube_video_info(video_id)
         custom_card = create_discord_style_card(video_id, video_info)
-        # カスタムCSS対応の最適化されたYouTube URL
+        # Misskeyプラットフォームの制限を考慮した最適化されたYouTube URL
         youtube_url = f"https://youtu.be/{video_id}"
         
         final_text = f"{final_text}\n\n{custom_card}\n{youtube_url}"
