@@ -281,6 +281,13 @@ async def customize_youtube_display(text: str, video_id: str = None) -> str:
     # 余分な改行を削除してテキストを短縮
     final_text = modified_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
     
+    # 特殊文字で囲まれたURLも削除
+    for url in original_urls:
+        final_text = final_text.replace(f"【{url}】", "")
+    
+    # さらに余分な改行を削除
+    final_text = final_text.replace('\n\n\n', '\n').replace('\n\n', '\n').strip()
+    
     # YouTube動画の場合は、Misskeyのネイティブ埋め込みを活用
     if video_id:
         # シンプルなテキストとYouTube URLを返す
