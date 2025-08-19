@@ -377,17 +377,38 @@ def create_custom_youtube_card(video_id: str, video_info: dict = None) -> str:
 """
     return card
 
+def remove_emojis(text: str) -> str:
+    """テキストから絵文字を削除"""
+    import re
+    # 絵文字のUnicode範囲を指定して削除
+    emoji_pattern = re.compile(
+        "["
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+        "\U00002702-\U000027B0"  # dingbats
+        "\U000024C2-\U0001F251"  # enclosed characters
+        "\U0001F900-\U0001F9FF"  # supplemental symbols and pictographs
+        "\U0001FA70-\U0001FAFF"  # symbols and pictographs extended-A
+        "\U0001F004"             # mahjong tile red dragon
+        "\U0001F0CF"             # playing card black joker
+        "\U0001F170-\U0001F251"  # enclosed alphanumeric supplement
+        "]+", flags=re.UNICODE
+    )
+    return emoji_pattern.sub('', text).strip()
+
 def create_discord_style_card(video_id: str, video_info: dict = None) -> str:
     """Discord風のカードを作成（最小限版）"""
     if video_info and 'title' in video_info:
-        title = video_info['title']
-        channel = video_info.get('channel', 'Unknown Channel')
+        title = remove_emojis(video_info['title'])  # タイトルから絵文字を削除
+        channel = remove_emojis(video_info.get('channel', 'Unknown Channel'))  # チャンネル名から絵文字を削除
     else:
         title = "動画タイトルを取得できませんでした"
         channel = "Unknown Channel"
     
-    # 最小限のカード形式（折りたたみ完全防止）
-    card = f"📺 {title}\n👤 {channel}\n🔗 https://youtube.com/watch?v={video_id}"
+    # 絵文字なしのシンプルなカード形式（折りたたみ完全防止）
+    card = f"{title}\n{channel}\nhttps://youtube.com/watch?v={video_id}"
     
     return card
 
